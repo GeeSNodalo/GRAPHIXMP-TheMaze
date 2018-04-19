@@ -1,0 +1,306 @@
+<html>
+	<head>
+		<title>The Maze - Tower of Hanoi</title>
+	</head>
+
+	<body>
+		<script src="js/three.js"></script>
+		<script src="ObjectControls.js"></script>
+		<script>
+			var camera, scene, renderer;
+			var floor;
+			var discs = [];
+			var keyboard = {};
+			var raycaster = new THREE.Raycaster();
+			var mouse = new THREE.Vector2();
+			var intersectionPlane;
+			var currentDisc = {
+				radius: 0,
+				originalX: -10,
+				releasedX: -10,
+
+				isMoved() {
+					return Math.abs( currentDisc.originalX - currentDisc.releasedX ) >= 5 ? true : false;
+				},
+				newPlatform() {
+					if ( currentDisc.releasedX <= -5) {
+						return rightTower;
+					} else if ( currentDisc.releasedX > -5 && currentDisc.releasedX <= 5 ) {
+						return centerTower;
+					} else if ( currentDisc.releasedX > 5 ) {
+						return leftTower;
+					}
+				},
+				oldPlatform() {
+					if ( currentDisc.originalX <= -5 ) {
+						return rightTower;	
+					} else if ( currentDisc.originalX > -5 && currentDisc.originalX <= 5 ) {
+						return centerTower;
+					} else if ( currentDisc.originalX > 5 ) {
+						return leftTower;
+					}
+				}
+			};
+			var leftTower = ["left"];
+			var centerTower = ["center"];
+			var rightTower = ["right"];
+
+			scene = new THREE.Scene();
+
+			camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+
+			camera.position.set(0, 4, -15);
+			camera.lookAt(new THREE.Vector3(0, 0, 0));
+
+			renderer = new THREE.WebGLRenderer();
+			renderer.setSize( window.innerWidth, window.innerHeight );
+      		document.body.appendChild( renderer.domElement );
+			renderer.shadowMap.endabled = true;
+			renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+
+			var objectControls = new ObjectControls(camera);
+
+			//plane
+			var geo = new THREE.PlaneGeometry(100000, 100000, 8, 8);
+			var mat = new THREE.MeshNormalMaterial({visible: false, side: THREE.DoubleSide});
+			intersectionPlane = new THREE.Mesh(geo, mat);
+			intersectionPlane.position.set(0,0,0);
+			scene.add(intersectionPlane);
+
+			//floor
+			var floorTexture = new THREE.TextureLoader().load("textures/floortexture.jpg");
+			floorTexture.wrapS = THREE.RepeatWrapping;
+			floorTexture.wrapT = THREE.RepeatWrapping;
+			floorTexture.repeat.set(4,4);
+
+			var planeGeometry = new THREE.PlaneGeometry(1000, 1000, 20, 20);
+
+			var planeMaterial = new THREE.MeshPhongMaterial({map: floorTexture, wireframe: false});
+
+			floor = new THREE.Mesh(planeGeometry, planeMaterial);
+			floor.rotation.x -= Math.PI / 2;
+			floor.recieveShadow = true;
+			floor.scale.set(0.09, 0.09, 0.09);
+			scene.add(floor);
+			
+			// platform general values
+			var platformTexture =  new THREE.TextureLoader().load("textures/normalcubetexture.jpg");
+			platformTexture.wrapS = THREE.RepeatWrapping;
+			platformTexture.wrapT = THREE.RepeatWrapping;
+			platformTexture.repeat.set(1,1);
+
+			//var platformGeometry = new THREE.CylinderGeometry(4, 4, 0.3, 50, false);
+			var platformGeometry = new THREE.BoxGeometry(8,0.3,8);
+			var platformMaterial = new THREE.MeshPhongMaterial({map: platformTexture, wireframe: false});
+			var left_x = -10;
+			var right_x = 10;
+			var center_x = 0;
+			var z = 0;
+
+			// platforms
+			var leftPlatform = new THREE.Mesh( platformGeometry, platformMaterial );
+			var y = leftPlatform.geometry.parameters.height / 2;
+			leftPlatform.position.set(left_x, y, z);
+			leftPlatform.receiveShadow = true;
+			leftPlatform.castShadow = true;
+			scene.add(leftPlatform);
+
+			var rightPlatform = new THREE.Mesh( platformGeometry, platformMaterial );
+			rightPlatform.position.set(right_x, y, z);
+			rightPlatform.receiveShadow = true;
+			rightPlatform.castShadow = true;
+			scene.add(rightPlatform);
+
+			var centerPlatform = new THREE.Mesh( platformGeometry, platformMaterial );
+			centerPlatform.position.set(center_x, y, z);
+			centerPlatform.receiveShadow = true;
+			centerPlatform.castShadow = true;
+			scene.add(centerPlatform);
+
+			// tower arrays
+			loadTowerArrays();
+
+			// lights
+			ambientLight = new THREE.AmbientLight( 0xFFFFFF, 0.2 );
+		    scene.add( ambientLight );
+
+		    //hemisphereLight = new THREE.HemisphereLight(0xffffff, 0x000000, 0.2);
+		    //scene.add( hemisphereLight );
+		    
+			var pointLight = new THREE.PointLight(0xffffff, 1.5, 100, 1.5);
+			pointLight.position.set(-3, 6, -6); 
+			pointLight.castShadow = true; 
+			pointLight.shadow.camera.near = 0.1; 
+			pointLight.shadow.camera.far = 25; 
+			scene.add(pointLight);
+			
+			
+			var spotLight = new THREE.SpotLight( 0xffffff, 2 );
+			spotLight.position.set(-10, 50, 0);
+			spotLight.castShadow = true;
+			spotLight.angle = 0.15;
+			spotLight.penumbra = 1;
+			spotLight.decay = 2;
+			spotLight.distance = 200;
+			spotLight.shadow.mapSize.width = 1024;
+			spotLight.shadow.mapSize.height = 1024;
+			spotLight.shadow.camera.near = 1;
+			spotLight.shadow.camera.far = 200;
+			spotLight.target.position.set( -10 , 0, 0 );
+			
+
+			scene.add(spotLight);
+			scene.add(spotLight.target);
+
+			// init discs
+			createDisc(4, 1);
+			createDisc(3, 2);
+			createDisc(2, 3);
+			createDisc(1, 4);
+
+			// animate
+			animate();
+
+			function createDisc(num, stackPos) {
+				var discGeometry = new THREE.CylinderGeometry(num, num, 0.8, 50, false );
+				var discTexture =  new THREE.TextureLoader().load("textures/ringtexture.jpg");
+				discTexture.wrapS = THREE.RepeatWrapping;
+				discTexture.wrapT = THREE.RepeatWrapping;
+				discTexture.repeat.set(1,1);
+				var discMaterial = new THREE.MeshPhongMaterial({ map: discTexture});
+				var disc = new THREE.Mesh( discGeometry, discMaterial );
+				var y = stackPos === 1 ? 0.4 + (stackPos * disc.geometry.parameters.height / 2) : (stackPos * (disc.geometry.parameters.height));
+				var x = 10;
+				var z = 0;
+				var hoverMaterial = new THREE.MeshBasicMaterial({ color: 0x55ff88 });
+
+				// change material on hover
+				disc.hoverOver = function() {
+					this.material = hoverMaterial;
+				}.bind(disc);
+
+				disc.hoverOut = function() {
+					this.material = discMaterial;
+				}.bind(disc);
+
+				disc.select = function() {
+					currentDisc.originalX = this.position.x;
+					currentDisc.radius = this.geometry.parameters.radiusTop;
+
+					intersectionPlane.position.copy( this.position );
+
+					leftTower = ["left"];
+   					centerTower = ["center"];
+    				rightTower = ["right"];
+
+    				console.log("clicked");
+    				loadTowerArrays();
+				}.bind(disc);
+
+				disc.deselect = function snap() {
+					currentDisc.releasedX = this.position.x;
+
+					if (currentDisc.isMoved()) {
+						var newTower = currentDisc.newPlatform();
+						var oldTower = currentDisc.oldPlatform();
+
+						if (newTower.length > 1) {
+							var topDiscRadius = newTower[newTower.length - 1].geometry.parameters.radiusTop;
+							if (currentDisc.radius > topDiscRadius) {
+								this.position.x = currentDisc.originalX;
+							} else if (currentDisc.radius < topDiscRadius) {
+								this.position.x = newTower[1].position.x;
+								oldTower.splice(oldTower.indexOf(this), 1);
+								newTower.push(this);
+							}
+						} else if (newTower.length === 1) {
+							oldTower.splice(oldTower.indexOf(this), 1);
+							newTower.push(this);
+						}
+					}
+
+					var towerArray = [leftTower, centerTower, rightTower];
+					towerArray.forEach(function snapDiscs(tower) {
+						for (var i = 1; i < tower.length; i++) {
+							tower[i].position.x = tower === leftTower ? 10 : tower === centerTower ? 0 : tower === rightTower ? -10 : 0;
+							tower[i].position.y = i * tower[i].geometry.parameters.height;
+						}
+					});
+
+				}.bind(disc);
+
+				disc.update = function() {
+					var raycaster = objectControls.raycaster;
+					i = raycaster.intersectObject(intersectionPlane);
+					
+
+					if (leftTower.indexOf(this) !== -1) {
+						var moveable = leftTower.indexOf(this) === leftTower.length - 1 ? true : false;
+						if (moveable) {
+							this.position.copy(i[0].point);
+						}
+					} else if (centerTower.indexOf(this) !== -1) {
+						var moveable = centerTower.indexOf(this) === centerTower.length - 1 ? true : false;
+						if (moveable) {
+							this.position.copy(i[0].point);
+						}
+					} else if (rightTower.indexOf(this) !== -1) {
+						var moveable = rightTower.indexOf(this) === rightTower.length - 1 ? true : false;
+						if (moveable) {
+							this.position.copy(i[0].point);
+						}
+					}
+				}.bind(disc);
+
+				disc.position.set(x, y, z);
+				disc.receiveShadow = true;
+				disc.castShadow = true;
+				scene.add(disc);
+				discs.push(disc);
+				objectControls.add(disc);
+			}	
+
+
+			function loadTowerArrays() {
+				// tower arrays
+				for (var i = 0; i < discs.length; i++) {
+					var x_pos = discs[i].position.x;
+					if (x_pos >= 5) {
+						leftTower.push(discs[i]);
+					} else if (x_pos < 5 && x_pos > -5) {
+						centerTower.push(discs[i]);
+					} else if (x_pos < -5) {
+						rightTower.push(discs[i]);
+					}
+				}
+			}
+
+			window.addEventListener( 'resize', onWindowResize, false );
+      		
+			function onWindowResize() {
+				camera.aspect = window.innerWidth / window.innerHeight;
+				camera.updateProjectionMatrix();
+				renderer.setSize( window.innerWidth, window.innerHeight );
+			}
+
+			function animate() {
+				requestAnimationFrame(animate);
+				objectControls.update();
+				
+				if (rightTower.length == 5) {
+					leftTower = ["left"];
+   					centerTower = ["center"];
+    				rightTower = ["right"];
+					close();
+				}
+
+				render();
+			}
+
+			function render() {
+				renderer.render(scene, camera);
+			}
+
+		</script>
+	</body>
+</html>

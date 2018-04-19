@@ -116,16 +116,16 @@ function checkPosition(playerModel, arrowKey, currentPos, key_1, key_2, key_3){
     }
     
     if(currentPos[0] == key_1[0] && currentPos[1] == key_1[1]){
-//        window.location.href = "https://www.google.com";
-        alert('You passed [14,12]!');
+        alert('Hm? What\'s this..');
+        window.open("towerOfHanoi.html", "_blank");
     }
     else if(currentPos[0] == key_2[0] && currentPos[1] == key_2[1]){
-//        window.location.href = "https://www.google.com";
-        alert('You passed [9,11]!');
+        alert('This place sure is weird..');
+        window.open("imagePuzzle.html", "_blank");
     }
     else if(currentPos[0] == key_3[0] && currentPos[1] == key_3[1]){
-//        window.location.href = "https://www.google.com";
-        alert('You passed [11,12]!');
+        alert('Finally found it!');
+        window.location.href="finalPuzzle.html";
     }
     
     render();

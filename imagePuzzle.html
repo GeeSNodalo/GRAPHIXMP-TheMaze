@@ -1,0 +1,238 @@
+<html>
+	<head>
+		<title>The Maze - Image Puzzle</title>
+	</head>
+
+	<body>
+		<script src="js/three.js"></script>
+		<script src="js/DragControls.js"></script>
+		<script src="js/TrackballControls.js"></script>
+		<script>
+			var camera, scene, renderer;
+			var objects = [];
+
+			scene = new THREE.Scene();
+
+			/*			
+			var scenebg = new THREE.TextureLoader().load("textures/normalcubetexture.jpg");
+			scenebg.wrapS = THREE.RepeatWrapping;
+			scenebg.wrapT = THREE.RepeatWrapping;
+			scenebg.repeat.set(3,3);
+			scene.background = scenebg;
+			*/
+			
+
+			camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+
+			renderer = new THREE.WebGLRenderer();
+			renderer.setSize( window.innerWidth, window.innerHeight );
+			renderer.shadowMap.enabled = true;
+			renderer.shadowMap.type = THREE.PCFShadowMap;
+      		document.body.appendChild( renderer.domElement );
+
+      		controls = new THREE.TrackballControls( camera );
+			controls.rotateSpeed = 1.0;
+			controls.zoomSpeed = 1.2;
+			controls.panSpeed = 0.8;
+			controls.noZoom = false;
+			controls.noPan = false;
+			controls.staticMoving = true;
+			controls.dynamicDampingFactor = 0.3;
+
+      		//code
+      		ambientLight = new THREE.AmbientLight( 0xFFFFFF, 0.2 );
+		    scene.add( ambientLight );
+		    hemisphereLight = new THREE.HemisphereLight(0xffffff, 0x000000, 0.2);
+		    scene.add( hemisphereLight );
+			var light = new THREE.SpotLight( 0xffffff, 0.7 );
+			light.position.set( 0, 500, 2000 );
+			light.angle = Math.PI / 9;
+			light.castShadow = true;
+			light.shadow.camera.near = 1000;
+			light.shadow.camera.far = 4000;
+			light.shadow.mapSize.width = 1024;
+			light.shadow.mapSize.height = 1024;
+			scene.add( light );
+
+			//floor
+			var floorTexture = new THREE.TextureLoader().load("textures/floortexture.jpg");
+			floorTexture.wrapS = THREE.RepeatWrapping;
+			floorTexture.wrapT = THREE.RepeatWrapping;
+			floorTexture.repeat.set(7,7);
+
+			var planeGeometry = new THREE.PlaneGeometry(5000, 5000);
+
+			var planeMaterial = new THREE.MeshPhongMaterial({map: floorTexture, wireframe: false});
+
+			floor = new THREE.Mesh(planeGeometry, planeMaterial);
+			floor.rotation.x -= Math.PI / 2;
+			floor.recieveShadow = true;
+			floor.scale.set(0.09, 0.09, 0.09);
+			scene.add(floor);
+			floor.position.y = -50;
+
+			// platforms
+			var platformGeometry = new THREE.BoxGeometry(10,10,1);
+			var platformMaterial = new THREE.MeshLambertMaterial({map: new THREE.TextureLoader().load("textures/puzzle_put.png")})
+			
+			var x = -10;
+			var y = 10;
+			var z = -60;
+			var platforms = [];
+
+			for (var i = 0; i < 3; i++) {
+				for (var j = 0; j < 3; j++) {
+					var plat = new THREE.Mesh(platformGeometry, platformMaterial);
+					plat.position.set(x, y, z);
+					plat.recieveShadow = true;
+					plat.castShadow = true;
+					scene.add(plat);
+					platforms.push(plat);
+					x += 12;
+				}
+				x = -10;
+				y += 12;
+			}
+
+			// cubes
+      		var geometry = new THREE.BoxGeometry( 10, 10, 3);
+			for ( var i = 0; i < 100; i ++ ) {
+				var randSeed = Math.floor(Math.random() * 9) + 1;
+				var color;
+				var texture;
+				console.log(randSeed);
+
+				switch(randSeed) {
+					case 1: texture = new THREE.TextureLoader().load("textures/puzzle1.png");
+					break;
+					case 2: texture = new THREE.TextureLoader().load("textures/puzzle2.png");
+					break;
+					case 3: texture = new THREE.TextureLoader().load("textures/puzzle3.png");
+					break;
+					case 4: texture = new THREE.TextureLoader().load("textures/puzzle4.png");
+					break;
+					case 5: texture = new THREE.TextureLoader().load("textures/puzzle5.png");
+					break;
+					case 6: texture = new THREE.TextureLoader().load("textures/puzzle6.png");
+					break;
+					case 7: texture = new THREE.TextureLoader().load("textures/puzzle7.png");
+					break;
+					case 8: texture = new THREE.TextureLoader().load("textures/puzzle8.png");
+					break;
+					case 9: texture = new THREE.TextureLoader().load("textures/puzzle9.png");
+					break;
+				}
+
+				var object = new THREE.Mesh( geometry, new THREE.MeshLambertMaterial( { map: texture } ) );
+
+				
+				object.name = randSeed;
+				object.position.x = Math.random() * 150 - 80;
+				object.position.y = Math.random() * 60 - 70;
+				object.position.z = -60;
+				object.castShadow = true;
+				object.receiveShadow = true;
+				scene.add( object );
+				objects.push( object );
+			}
+			
+			var dragControls = new THREE.DragControls( objects, camera, renderer.domElement );
+			dragControls.addEventListener( 'dragstart', function ( event ) { 
+				console.log("clicked");
+				controls.enabled = false; 
+			} );
+			dragControls.addEventListener( 'dragend', function ( event ) { controls.enabled = true; } );
+			
+			//window.addEventListener( 'resize', onWindowResize, false );
+
+      		animate();
+
+
+      		window.addEventListener( 'resize', onWindowResize, false );
+
+			function onWindowResize() {
+				camera.aspect = window.innerWidth / window.innerHeight;
+				camera.updateProjectionMatrix();
+				renderer.setSize( window.innerWidth, window.innerHeight );
+			}
+
+      		function animate() {
+      			requestAnimationFrame(animate);
+      			checkPuzzle();
+      			render();
+      		}
+
+      		function checkPuzzle() {
+      			/*
+      			var correct = false;
+      			for (var i = 0; i < 9; i++) 
+      				if (platforms[i].position.x === scene.getObjectByName(i + 1).position.x && platforms[i].position.y === scene.getObjectByName(i + 1).position.y)
+      					correct = true;
+      				else
+      					correct = false;
+
+      			if (correct)
+      				close();
+      			*/
+
+      			var correct = 0;
+      			for (var i = 0; i < objects.length; i++) {
+      				if (objects[i].name === 1) {
+      					if (objects[i].position.x >= -10 && objects[i].position.x < -9.4 && objects[i].position.y >= 33 && objects[i].position.y < 36) {
+      						correct++;
+      						//console.log("first space correct");
+      					}
+      				} else if (objects[i].name === 2) {
+      					if (objects[i].position.x >= 1 && objects[i].position.x < 2.6 && objects[i].position.y >= 33 && objects[i].position.y < 36) {
+      						correct++;
+      						console.log("second space correct");
+      					}
+      				} else if (objects[i].name === 3) {
+      					if (objects[i].position.x >= 13 && objects[i].position.x < 14.6  && objects[i].position.y >= 33 && objects[i].position.y < 36) {
+      						correct++;
+      						console.log("third space correct");
+      					}
+      				} else if (objects[i].name === 4) {
+      					if (objects[i].position.x >= -10 && objects[i].position.x < -9.4 && objects[i].position.y >= 21	 && objects[i].position.y < 23) {
+      						correct++;
+      						console.log("fourth space correct");
+      					}
+      				} else if (objects[i].name === 5) {
+      					if (objects[i].position.x >= 1 && objects[i].position.x < 2.6 && objects[i].position.y >= 21	 && objects[i].position.y < 23) {
+      						correct++;
+      						console.log("fifth space correct");
+      					}
+      				} else if (objects[i].name === 6) {
+      					if (objects[i].position.x >= 13 && objects[i].position.x < 14.6 && objects[i].position.y >= 21	 && objects[i].position.y < 23) {
+      						correct++;
+      						console.log("sixth space correct");
+      					}
+      				} else if (objects[i].name === 7) {
+      					if (objects[i].position.x >= -10 && objects[i].position.x < -9.4 && objects[i].position.y >= 9	 && objects[i].position.y < 11) {
+      						correct++;
+      						console.log("seventh space correct");
+      					}
+      				} else if (objects[i].name === 8) {
+      					if (objects[i].position.x >= 1 && objects[i].position.x < 2.6 && objects[i].position.y >= 9	 && objects[i].position.y < 11) {
+      						correct++;
+      						console.log("eighth space correct");
+      					}
+      				} else if (objects[i].name === 9) {
+      					if (objects[i].position.x >= 13 && objects[i].position.x < 14.6 && objects[i].position.y >= 9	 && objects[i].position.y < 11) {
+      						correct++;
+      						console.log("ninth space correct");
+      					}
+      				}		
+      			}
+
+      			if (correct === 9)
+      				close();
+
+      		}
+
+      		function render() {
+      			renderer.render(scene, camera);
+      		}
+		</script>
+	</body>
+</html>
