@@ -1,4 +1,4 @@
-   
+/* Giselle Nodalo; Gab Santiago GRAPHIX MP */   
 var mazeArray =[
         [1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1], //0
         [1,0,0,0,0,0,0,0,0,0,0,0,1,0,0,0,0,0,0,0,0,0,0,1], //1
@@ -33,41 +33,58 @@ function printMaze(){
             defVoxel.position.x = -625;
             defVoxel.position.z = -575;
             
-    /* Print Maze */
-    
+    /* Print Maze */    
     for(i = 0; i < 24; i++){ 
         for(j = 0; j < 24; j++){
             var voxel = new THREE.Mesh( cubeGeo, cubeMaterial );
             var plane = new THREE.Mesh(planeGeo, planeMaterial);
+            var key = new THREE.Mesh(planeGeo, keyMaterial);
             voxel.position.y = 25;
             voxel.position.z = defVoxel.position.z;
             plane.position.z = defVoxel.position.z ;
             plane.position.y = 0;
-            if(mazeArray[i][j] == 1){
+            key.position.z = defVoxel.position.z ;
+            key.position.y = 0;
+            
+            if(mazeArray[i][j] == 1){// add cube geometry to make maze
                 voxel.position.x = defVoxel.position.x + 50; 
                 defVoxel.position.x += 50;
                 scene.add(voxel);
             }
             else if(mazeArray[i][j] == 0){
+                
+                
                 plane.position.x = defVoxel.position.x+50;
-//                plane.rotation.x+= 0.5;
-//                console.log(THREE.Math.degToRad(90));
                 voxel.position.x = defVoxel.position.x + 50; 
                 defVoxel.position.x += 50;
-                scene.add(plane);
+                scene.add(plane);  
+                
+                if(i == 14 && j == 12){
+                    key.position.x = defVoxel.position.x;
+                    scene.add(key);
+                }
+                
+                if(i == 9 && j == 11){
+                    key.position.x = defVoxel.position.x;
+                    scene.add(key);
+                }
+                
+                if(i == 11 && j == 12){
+                    key.position.x = defVoxel.position.x;
+                    scene.add(key);
+                }
                 
             }
         }
-        //voxel.position.z = defVoxel.position.z + 50;
+        
+         //voxel.position.z = defVoxel.position.z + 50;
         defVoxel.position.z +=50; 
         defVoxel.position.x = -625;
     }
-    
 }
 
-function checkCollision(playerModel, arrowKey, currentPos){
+function checkPosition(playerModel, arrowKey, currentPos, key_1, key_2, key_3){
   
-    
     if(arrowKey == 37 && playerModel.position.x-50 >= -575) {
       if(mazeArray[currentPos[0]][currentPos[1]-1] == 0){
            console.log('Move Left' );
@@ -77,12 +94,11 @@ function checkCollision(playerModel, arrowKey, currentPos){
     }
     else if(arrowKey == 38 && playerModel.position.z-50 >= -575){
         if(mazeArray[currentPos[0]-1][currentPos[1]] == 0){
-        
             console.log('Move Up');
             playerModel.position.z -= 50;
             currentPos[0]-=1;
-            
         }
+
     }
     else if(arrowKey == 39 && playerModel.position.x+50 <= 575) {
        if(mazeArray[currentPos[0]][currentPos[1]+1]==0){
@@ -96,9 +112,20 @@ function checkCollision(playerModel, arrowKey, currentPos){
             console.log('Move Down');
             playerModel.position.z += 50;
             currentPos[0]+=1;
-
-       }
-        
+       }        
+    }
+    
+    if(currentPos[0] == key_1[0] && currentPos[1] == key_1[1]){
+//        window.location.href = "https://www.google.com";
+        alert('You passed [14,12]!');
+    }
+    else if(currentPos[0] == key_2[0] && currentPos[1] == key_2[1]){
+//        window.location.href = "https://www.google.com";
+        alert('You passed [9,11]!');
+    }
+    else if(currentPos[0] == key_3[0] && currentPos[1] == key_3[1]){
+//        window.location.href = "https://www.google.com";
+        alert('You passed [11,12]!');
     }
     
     render();

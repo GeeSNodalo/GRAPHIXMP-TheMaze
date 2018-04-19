@@ -54,7 +54,7 @@ THREE.OrbitControls = function ( object, domElement ) {
 	this.zoomSpeed = 1.0;
 
 	// Set to false to disable rotating
-	this.enableRotate = false;
+	this.enableRotate = true;
 	this.rotateSpeed = 1.0;
 
 	// Set to false to disable panning
