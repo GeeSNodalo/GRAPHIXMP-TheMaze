@@ -11,6 +11,7 @@
     	<script src="js/OrbitControls.js"></script>
   
 		<script>
+            /* Giselle Nodalo; Gab Santiago GRAPHIX MP */ 
 			var scene = new THREE.Scene();
 
 			ambientLight = new THREE.AmbientLight( 0xFFFFFF, 0.2 );
@@ -178,7 +179,8 @@
 
               // Giselle, put the end screen here
               alert("Game Complete! Thank you for playing!");
-		        }
+		        window.open("endScreen.html", "_blank")
+                };
 
 		        fixedCubeCoordinates.map( box => {
 		          if (
